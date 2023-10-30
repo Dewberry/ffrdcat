@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import json
 from kerchunk import hdf
 import pyproj
@@ -5,6 +6,12 @@ import pystac
 from shapely.geometry import Polygon, mapping
 
 from s3utils.s3utils import get_object_datetime
+
+
+AORC_DATERANGE = [
+    datetime(1979, 2, 1, tzinfo=timezone.utc),
+    datetime(2022, 10, 31, tzinfo=timezone.utc),
+]
 
 
 class PlanHDF:
@@ -27,7 +34,7 @@ class PlanHDF:
         """
         self.uri = uri
         self._bbox = bbox
-        self.temporal = temporal
+        self.temporal = AORC_DATERANGE[0]
         self.resolution = resolution
         self.projection = projection
         self._footprint_4326 = mapping(self._create_footprint())
@@ -88,7 +95,7 @@ class PlanHDF:
             return cls(
                 uri=uri,
                 bbox=json.loads(tree["refs"]["Geometry/.zattrs"])["Extents"],
-                temporal=get_object_datetime(bucket_name, file_key),
+                temporal=AORC_DATERANGE[0],
                 resolution=None,
                 projection=json.loads(tree["refs"][".zattrs"])["Projection"],
                 tree=tree,
@@ -97,7 +104,7 @@ class PlanHDF:
             print(f"An error occurred: {e}")
             return None
 
-    def create_thumbnail(self, thumbnail_path, factor=8, cmap="magma"):
+    def create_thumbnail(self, thumbnail_path, factor=8, cmap="Blues"):
         raise NotImplementedError("create_thumbnail method is not implemented")
 
     def __repr__(self):
@@ -122,7 +129,8 @@ class FRDRasPlan(PlanHDF):
             id=item_id,
             geometry=self._footprint_4326,
             bbox=self.bbox,
-            datetime=self.temporal,
+            # datetime=self.temporal,
+            datetime=AORC_DATERANGE[0],
             stac_extensions=["https://stac-extensions.github.io/projection/v1.0.0/schema.json"],
             properties=dict(tile="tile"),
         )

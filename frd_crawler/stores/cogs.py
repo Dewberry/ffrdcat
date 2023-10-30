@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from matplotlib import pyplot as plt
 import numpy as np
 import pyproj
@@ -7,6 +8,12 @@ from rasterio.warp import reproject, Resampling
 from shapely.geometry import Polygon, mapping
 
 from s3utils.s3utils import get_object_datetime
+
+
+AORC_DATERANGE = [
+    datetime(1979, 2, 1, tzinfo=timezone.utc),
+    datetime(2022, 10, 31, tzinfo=timezone.utc),
+]
 
 
 class COG:
@@ -27,7 +34,7 @@ class COG:
         """
         self.uri = uri
         self._bbox = bbox
-        self.temporal = temporal
+        self.temporal = AORC_DATERANGE[0]
         self.resolution = resolution
         self.projection = projection
         self._footprint_4326 = mapping(self._create_footprint())
@@ -74,7 +81,7 @@ class COG:
                 return cls(
                     uri=f"s3://{bucket_name}/{file_key}",
                     bbox=[bbox.left, bbox.bottom, bbox.right, bbox.top],
-                    temporal=temporal,
+                    temporal=AORC_DATERANGE[0],
                     resolution=dataset.res,
                     projection=projection,
                 )
@@ -82,7 +89,7 @@ class COG:
             print(f"An error occurred: {e}")
             return None
 
-    def create_thumbnail(self, thumbnail_path, factor=8, cmap="magma"):
+    def create_thumbnail(self, thumbnail_path, factor=8, cmap="GnBu"):
         try:
             with rasterio.open(self.uri.replace("s3://", "/vsis3/")) as dataset:
                 # Full extent of the image
@@ -138,7 +145,8 @@ class FRDCog(COG):
             id=item_id,
             geometry=self._footprint_4326,
             bbox=self.bbox,
-            datetime=self.temporal,
+            # datetime=self.temporal,
+            datetime=AORC_DATERANGE[0],
             stac_extensions=["https://stac-extensions.github.io/projection/v1.0.0/schema.json"],
             properties=dict(tile="tile"),
         )
@@ -156,7 +164,7 @@ class FRDCog(COG):
             self.create_thumbnail(thumbnail_path)
             item.add_asset(
                 key="thumbnail",
-                asset=pystac.Asset(href=thumbnail_path, media_type=pystac.MediaType.PNG, roles=["thumbnail"]),
+                asset=pystac.Asset(href="thumbnail.png", media_type=pystac.MediaType.PNG, roles=["thumbnail"]),
             )
 
         return item
