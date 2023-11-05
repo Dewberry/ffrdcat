@@ -7,13 +7,7 @@ import rasterio
 from rasterio.warp import reproject, Resampling
 from shapely.geometry import Polygon, mapping
 
-from s3utils.s3utils import get_object_datetime
-
-
-AORC_DATERANGE = [
-    datetime(1979, 2, 1, tzinfo=timezone.utc),
-    datetime(2022, 10, 31, tzinfo=timezone.utc),
-]
+from .s3_utils import get_object_datetime, split_s3_path
 
 
 class COG:
@@ -21,7 +15,15 @@ class COG:
     Cloud-Optimized Geotiff Class for conversion into a stac item or asset
     """
 
-    def __init__(self, uri: str, bbox: list, temporal: list, resolution: str, projection: str):
+    def __init__(
+        self,
+        uri: str,
+        bbox: list,
+        temporal: str,
+        resolution: str,
+        projection: str,
+        cmap: str,
+    ):
         """
         Initialize COG object.
 
@@ -34,10 +36,11 @@ class COG:
         """
         self.uri = uri
         self._bbox = bbox
-        self.temporal = AORC_DATERANGE[0]
+        self.temporal = datetime.now(tz=timezone.utc)
         self.resolution = resolution
         self.projection = projection
         self._footprint_4326 = mapping(self._create_footprint())
+        self.cmap = cmap
 
     @property
     def bbox(self):
@@ -45,7 +48,9 @@ class COG:
 
     @property
     def bbox_4326(self):
-        transformer = pyproj.Transformer.from_crs(self.projection, "epsg:4326", always_xy=True)
+        transformer = pyproj.Transformer.from_crs(
+            self.projection, "epsg:4326", always_xy=True
+        )
 
         return list(transformer.transform(self._bbox[0], self._bbox[1])) + list(
             transformer.transform(self._bbox[2], self._bbox[3])
@@ -65,7 +70,7 @@ class COG:
         )
 
     @classmethod
-    def from_s3(cls, bucket_name, file_key):
+    def from_s3(cls, bucket_name, file_key, cmap):
         try:
             with rasterio.Env(AWS_S3_ENDPOINT_URL="https://s3.amazonaws.com"):
                 s3_path = f"/vsis3/{bucket_name}/{file_key}"
@@ -81,15 +86,33 @@ class COG:
                 return cls(
                     uri=f"s3://{bucket_name}/{file_key}",
                     bbox=[bbox.left, bbox.bottom, bbox.right, bbox.top],
-                    temporal=AORC_DATERANGE[0],
+                    temporal=datetime.now(tz=timezone.utc),
                     resolution=dataset.res,
                     projection=projection,
+                    cmap=cmap,
                 )
         except Exception as e:
             print(f"An error occurred: {e}")
             return None
 
-    def create_thumbnail(self, thumbnail_path, factor=8, cmap="GnBu"):
+    # @property
+    # def all_cells_dry(self):
+    #     # TODO: reading data should happen only once, update implementation
+    #     bucket, key = split_s3_path(self.uri)
+
+    #     try:
+    #         with rasterio.Env(AWS_S3_ENDPOINT_URL="https://s3.amazonaws.com"):
+    #             s3_path = f"/vsis3/{bucket}/{key}"
+    #             with rasterio.open(s3_path) as dataset:
+    #                 raster_data = dataset.read(1)
+    #                 nodata = dataset.nodatavals[0]
+    #                 return (raster_data == nodata).all()
+
+    #     except Exception as e:
+    #         print(f"An error occurred: {e}")
+    #         return None
+
+    def create_thumbnail(self, thumbnail_path, factor=4):
         try:
             with rasterio.open(self.uri.replace("s3://", "/vsis3/")) as dataset:
                 # Full extent of the image
@@ -104,7 +127,9 @@ class COG:
                 transform = dataset.transform * dataset.transform.scale(
                     (dataset.width / new_width), (dataset.height / new_height)
                 )
-                resampled = np.empty((dataset.count, new_height, new_width), dataset.profile["dtype"])
+                resampled = np.empty(
+                    (dataset.count, new_height, new_width), dataset.profile["dtype"]
+                )
 
                 for i in range(1, dataset.count + 1):
                     reproject(
@@ -118,7 +143,9 @@ class COG:
                     )
 
                 # Save the downsampled data as a PNG file
-                plt.imsave(thumbnail_path, np.squeeze(resampled, axis=0), cmap=cmap)
+                plt.imsave(
+                    thumbnail_path, np.squeeze(resampled, axis=0), cmap=self.cmap
+                )
 
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -137,24 +164,37 @@ class COG:
 
 
 class FRDCog(COG):
-    def __init__(self, uri, bbox, temporal, resolution, projection):
-        super().__init__(uri, bbox, temporal, resolution, projection)
+    def __init__(self, uri, bbox, temporal, resolution, projection, cmap):
+        super().__init__(uri, bbox, temporal, resolution, projection, cmap)
 
     def to_pystac_item(self, item_id, thumbnail_path, new_thumbnail: bool = True):
         item = pystac.Item(
             id=item_id,
             geometry=self._footprint_4326,
-            bbox=self.bbox,
-            # datetime=self.temporal,
-            datetime=AORC_DATERANGE[0],
-            stac_extensions=["https://stac-extensions.github.io/projection/v1.0.0/schema.json"],
-            properties=dict(tile="tile"),
+            bbox=self.bbox_4326,
+            datetime=self.temporal,
+            stac_extensions=[
+                "https://stac-extensions.github.io/projection/v1.0.0/schema.json",
+                "https://stac-extensions.github.io/storage/v1.0.0/schema.json",
+                "https://stac-extensions.github.io/processing/v1.1.0/schema.json",
+            ],
+            properties={
+                "frd:proj": "kanawha",
+                "proj:bbox": self.bbox,
+                "proj:wkt2": self.projection,
+                # "storage:platform": "AWS",
+                # "storage:region": "us-east-1",
+                "processing:software": {"frd-to-stac": "2023.11.04"},
+                "created": pystac.utils.datetime_to_str(datetime.now(tz=timezone.utc)),
+                "updated": pystac.utils.datetime_to_str(datetime.now(tz=timezone.utc)),
+            },
         )
 
         item.add_asset(
             key="cog",
             asset=pystac.Asset(
-                href=f"{item_id}",
+                href="grid.tif",
+                # href=self.uri,
                 media_type=pystac.MediaType.GEOTIFF,
                 title=f"{item_id}",
             ),
@@ -164,7 +204,11 @@ class FRDCog(COG):
             self.create_thumbnail(thumbnail_path)
             item.add_asset(
                 key="thumbnail",
-                asset=pystac.Asset(href="thumbnail.png", media_type=pystac.MediaType.PNG, roles=["thumbnail"]),
+                asset=pystac.Asset(
+                    href="thumbnail.png",
+                    media_type=pystac.MediaType.PNG,
+                    roles=["thumbnail"],
+                ),
             )
 
         return item
