@@ -1,9 +1,10 @@
 from datetime import datetime, timezone
+import shutil
 import data_catalog
 import model_catalog
 import realizations_collection
-import os
 import pystac
+from simulation import ras, depth_grids
 
 # ----------CONFIG----------#
 project_name = "kanawha"
@@ -13,6 +14,15 @@ project_description = (
 catalogs = [data_catalog, model_catalog]
 collections = [realizations_collection]
 project_extensions = []
+
+
+try:
+    shutil.rmtree(project_name)
+    print(
+        f"Directory '{project_name}' and its contents have been successfully removed."
+    )
+except OSError as e:
+    print(f"Error: {e.strerror}")
 
 
 # Step 1. Create the top level catalog
@@ -36,3 +46,7 @@ for col in collections:
 # Step 4. Save
 catalog.normalize_hrefs(f"./{project_name}")
 catalog.save(catalog_type=pystac.CatalogType.SELF_CONTAINED)
+
+# Step 4. Add data to events
+ras.main()
+depth_grids.main()

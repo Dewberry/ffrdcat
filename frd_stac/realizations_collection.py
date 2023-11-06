@@ -20,50 +20,50 @@ col_map = {
 
 def main():
     # Realizations top level is a collection with each realization representing
-    # a realization catalog 
+    # a realization catalog
     realizations_collection = pystac.Collection(
-            id=col_map["id"],
-            description=col_map["description"],
-            stac_extensions=col_map["extensions"],
-            extent=pystac.Extent(
-                spatial=pystac.SpatialExtent([0, 0, 0, 0]),
-                temporal=pystac.TemporalExtent(
-                    intervals=[
-                        datetime.now(tz=timezone.utc),
-                        datetime.now(tz=timezone.utc),
-                    ]
-                ),
+        id=col_map["id"],
+        description=col_map["description"],
+        stac_extensions=col_map["extensions"],
+        extent=pystac.Extent(
+            spatial=pystac.SpatialExtent([0, 0, 0, 0]),
+            temporal=pystac.TemporalExtent(
+                intervals=[
+                    datetime.now(tz=timezone.utc),
+                    datetime.now(tz=timezone.utc),
+                ]
             ),
-        )
+        ),
+    )
 
     # Realization 1 is a collection of simulations
     r1_collection = pystac.Collection(
         id=r1.col_map["id"],
         description=r1.col_map["description"],
         stac_extensions=r1.col_map["extensions"],
-            extent=pystac.Extent(
-                spatial=pystac.SpatialExtent([0, 0, 0, 0]),
-                temporal=pystac.TemporalExtent(
-                    intervals=[
-                        datetime.now(tz=timezone.utc),
-                        datetime.now(tz=timezone.utc),
-                    ]
-                ),
+        extent=pystac.Extent(
+            spatial=pystac.SpatialExtent([0, 0, 0, 0]),
+            temporal=pystac.TemporalExtent(
+                intervals=[
+                    datetime.now(tz=timezone.utc),
+                    datetime.now(tz=timezone.utc),
+                ]
             ),
-        )
+        ),
+    )
     realizations_collection.add_child(r1_collection)
-    
+
     # A realization is a collection of simulation catalogs.
     sim_cols = [
-            ras.col_map,
-            ressim.col_map,
-            hms.col_map,
-            consequences.col_map,
-            depth_grids.col_map,
-            notebooks.col_map,
+        ras.col_map,
+        ressim.col_map,
+        hms.col_map,
+        consequences.col_map,
+        depth_grids.col_map,
+        notebooks.col_map,
     ]
 
-    for sim in range(1,10):
+    for sim in range(250, 255):
         catalog = pystac.Catalog(
             id=f"r1-s{sim}",
             description="Simulation Catalog",

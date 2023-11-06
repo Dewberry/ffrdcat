@@ -95,22 +95,22 @@ class COG:
             print(f"An error occurred: {e}")
             return None
 
-    # @property
-    # def all_cells_dry(self):
-    #     # TODO: reading data should happen only once, update implementation
-    #     bucket, key = split_s3_path(self.uri)
+    @property
+    def all_cells_dry(self):
+        # TODO: reading data should happen only once, update implementation
+        bucket, key = split_s3_path(self.uri)
 
-    #     try:
-    #         with rasterio.Env(AWS_S3_ENDPOINT_URL="https://s3.amazonaws.com"):
-    #             s3_path = f"/vsis3/{bucket}/{key}"
-    #             with rasterio.open(s3_path) as dataset:
-    #                 raster_data = dataset.read(1)
-    #                 nodata = dataset.nodatavals[0]
-    #                 return (raster_data == nodata).all()
+        try:
+            with rasterio.Env(AWS_S3_ENDPOINT_URL="https://s3.amazonaws.com"):
+                s3_path = f"/vsis3/{bucket}/{key}"
+                with rasterio.open(s3_path) as dataset:
+                    raster_data = dataset.read(1)
+                    nodata = dataset.nodatavals[0]
+                    return (raster_data == nodata).all()
 
-    #     except Exception as e:
-    #         print(f"An error occurred: {e}")
-    #         return None
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return None
 
     def create_thumbnail(self, thumbnail_path, factor=4):
         try:
@@ -180,6 +180,8 @@ class FRDCog(COG):
             ],
             properties={
                 "frd:proj": "kanawha",
+                "frd:project_status": "FFRD pilot",
+                "frd:project_status": "FFRD pilot",
                 "proj:bbox": self.bbox,
                 "proj:wkt2": self.projection,
                 # "storage:platform": "AWS",
@@ -196,7 +198,7 @@ class FRDCog(COG):
                 href="grid.tif",
                 # href=self.uri,
                 media_type=pystac.MediaType.GEOTIFF,
-                title=f"{item_id}",
+                roles=["data"],
             ),
         )
 

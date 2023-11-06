@@ -1,6 +1,6 @@
 col_map = {
     "id": "notebooks",
-    "description": "This collection contains jupyter notebooks and reports \
+    "description": "Jupyter notebooks and reports \
         generated to provide qc and enable analytics on the items in the realization \
         and corresponding simulation collections",
     "extensions": [
