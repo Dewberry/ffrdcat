@@ -15,7 +15,6 @@ catalogs = [data_catalog, model_catalog]
 collections = [realizations_collection]
 project_extensions = []
 
-
 try:
     shutil.rmtree(project_name)
     print(

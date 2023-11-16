@@ -6,9 +6,9 @@ import pystac
 import json
 
 realization = "r1"
-sample_models = ["New_Little_River", "ElkMiddle"]
-sample_simulations = range(250, 252)
-sample_grids = range(120, 122)
+sample_models = ["New_Little_River", "ElkMiddle", "GSummersville"]
+sample_simulations = range(250, 255)
+sample_grids = range(120, 130)
 parent_collection = f"kanawha/realizations/r1/collection.json"
 # bucket = "ffrd-pilot"
 
@@ -52,10 +52,3 @@ def main(bucket: str = "ffrd-pilot"):
         collection.add_items(pystac.ItemCollection(items))
         collection.extent.spatial = pystac.SpatialExtent(bboxes)
         collection.save()
-
-        #  TODO: Update collections in a separate script
-        # parent = pystac.Collection.from_file(parent_collection)
-        # if [0,0,0,0] in parent.extent.spatial.bboxes:
-        #     parent.extent.spatial.bboxes.remove([0,0,0,0])
-        # parent.extent.spatial.bboxes = parent.extent.spatial.bboxes.extend(catalog_bboxes)
-        # parent.save()

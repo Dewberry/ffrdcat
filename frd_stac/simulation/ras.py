@@ -4,16 +4,12 @@ from utils import ras
 import pystac
 import json
 
-# sample_models = ["New_Little_River", "ElkMiddle"]
-# sample_simulations = range(250, 252)
-
-
-sample_models = ["New_Little_River"]
-sample_simulations = range(250, 251)
+sample_models = ["New_Little_River", "ElkMiddle", "GSummersville"]
+sample_simulations = range(250, 255)
 
 
 def main(bucket: str = "ffrd-pilot"):
-    bucket="ffrd-pilot"
+    bucket = "ffrd-pilot"
     # catalog_bboxes = []
     for sim in sample_simulations:
         col_file = f"kanawha/realizations/r1/r1-s{sim}/hec-ras/collection.json"
@@ -37,10 +33,3 @@ def main(bucket: str = "ffrd-pilot"):
         collection.add_items(pystac.ItemCollection(items))
         collection.extent.spatial = pystac.SpatialExtent(bboxes)
         collection.save()
-        
-        # #  TODO: Update collections in a separate script
-        # parent = pystac.Collection.from_file(parent_collection)
-        # if [0, 0, 0, 0] in parent.extent.spatial.bboxes:
-        #     parent.extent.spatial.bboxes.remove([0, 0, 0, 0])
-        # parent.extent.spatial.bboxes = parent.extent.spatial.bboxes.extend(catalog_bboxes)
-        # parent.save()
