@@ -6,7 +6,7 @@ from pystac import Item
 from shapely.geometry import mapping
 
 from common.s3_utils import vsi_path
-from common.geo_utils import simplified_footprint, bbox_to_4326,footprint_from_bbox
+from common.geo_utils import simplified_footprint, bbox_to_4326, footprint_from_bbox
 
 from stores.vectors import get_vector_meta, STAC_VECTOR_EXTENSIONS
 from stores.rasters import get_raster_meta, STAC_RASTER_EXTENSIONS
@@ -155,12 +155,10 @@ class ZippedVector(S3Zip):
         )
 
 
-class ZippedRaster():
-    def __init__(
-        self, bucket: str, key: str, file_name: str
-    ):
-        self.bucket=bucket
-        self.key=key
+class ZippedRaster:
+    def __init__(self, bucket: str, key: str, file_name: str):
+        self.bucket = bucket
+        self.key = key
         self.file_name = file_name
         self.vsi_path = vsi_path(self.bucket, self.key, self.file_name)
         self.meta_data = get_raster_meta(self.vsi_path)
@@ -175,7 +173,7 @@ class ZippedRaster():
 
     @property
     def footprint(self):
-        return footprint_from_bbox(self.meta_data.bbox,  self.projection)
+        return footprint_from_bbox(self.meta_data.bbox, self.projection)
 
     @property
     def bbox_4326(self):

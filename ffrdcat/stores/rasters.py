@@ -11,7 +11,7 @@ class RasterMeta:
 
 
 STAC_RASTER_EXTENSIONS = [
-    "https://stac-extensions.github.io/projection/v1.0.0/schema.json",
+    # "https://stac-extensions.github.io/projection/v1.0.0/schema.json",
     "https://stac-extensions.github.io/storage/v1.0.0/schema.json",
     "https://stac-extensions.github.io/processing/v1.1.0/schema.json",
 ]
