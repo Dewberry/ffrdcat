@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import pathlib as pl
 import json
-from pystac import Item
+from pystac import Item, Asset
 from shapely.geometry import mapping
 
 from common.s3_utils import vsi_path
@@ -138,6 +138,14 @@ class ZippedVector(S3Zip):
     def geom_type(self):
         return self.meta_data.geom_type
 
+    def shapefile_parts(self, filename: str):
+        """
+        This function compares items in the zip at the same level and returns
+        items that share file name with a shapefile, in an attempt to capture
+        the many files associated with a shapefile
+        """
+        return [f for f in self.contents if f[:-4] == filename[:-4]]
+
     def to_stac_item(
         self,
         item_id: str,
@@ -202,3 +210,14 @@ class ZippedRaster:
             stac_extensions=stac_extensions,
             properties=properties,
         )
+
+
+def add_shapefile_assets_to_item(zv: ZippedVector, shapefile_name:str, item: Item) -> Item:
+    for part in zv.shapefile_parts(shapefile_name):
+        item.add_asset(
+            key=pl.Path(part).suffix.replace(".", ""),
+            asset=Asset(
+                href=f"{zv.key}/{part}", media_type="Shapefile-part", title=part
+            ),
+        )
+    return item

@@ -3,32 +3,29 @@ import os
 import pathlib as pl
 import logging
 
-from stores.zips import S3Zip, ZippedVector, ZippedRaster
+from stores.zips import S3Zip, ZippedVector, ZippedRaster, add_shapefile_assets_to_item
 from stores.vectors import vector_item_properties
 from stores.rasters import raster_item_properties
 from common.s3_utils import verify_key, key_last_updated
 from common.stac_utils import collection_from_zip
 
-
 def process_item():
     pass
 
-
-def process_zipped_shapefile(project: str, z: S3Zip, sess: fiona.session.AWSSession):
-    # parts = z.shapefile_parts(s)
-    shapefile_name = z.shapefiles[0]
+def process_zipped_shapefile(project: str, z: S3Zip, shapefile_name:str, sess: fiona.session.AWSSession):
     logging.info(f"processing: {shapefile_name}")
     zv = ZippedVector(z.bucket, z.key, shapefile_name, sess)
     item_id = pl.Path(shapefile_name).stem
     dtm = key_last_updated(z.bucket, z.key)
     properties = vector_item_properties(project, fields=zv.meta_data.fields)
     item = zv.to_stac_item(item_id, dtm, properties, href=z.key)
+    item = add_shapefile_assets_to_item(z, shapefile_name, item)
+    # TODO: add validation for this process and update how extension properties are injected.
     # item.validate()
     return item
 
 
-def process_zipped_raster(project: str, z: S3Zip, sess: fiona.session.AWSSession):
-    rasterfile_name = z.rasters[0]
+def process_zipped_raster(project: str, z: S3Zip,rasterfile_name:str,  sess: fiona.session.AWSSession):
     logging.info(f"processing: {rasterfile_name}")
     zr = ZippedRaster(z.bucket, z.key, rasterfile_name)
     item_id = pl.Path(rasterfile_name).stem
@@ -41,17 +38,21 @@ def process_zipped_raster(project: str, z: S3Zip, sess: fiona.session.AWSSession
 
 def process_collection(project: str, z: S3Zip, sess: fiona.session.AWSSession):
     items, bboxes, extensions = [], [], []
-    for _ in z.shapefiles:
-        item = process_zipped_shapefile(project, z, sess)
+    for shapefile in z.shapefiles:
+        item = process_zipped_shapefile(project, z, shapefile, sess)
         items.append(item)
         bboxes.append(item.bbox)
         extensions.extend(item.stac_extensions)
 
-    for _ in z.rasters:
-        item = process_zipped_raster(project, z, sess)
+    for raster in z.rasters:
+        item = process_zipped_raster(project, z, raster, sess)
         items.append(item)
         bboxes.append(item.bbox)
         extensions.extend(item.stac_extensions)
+
+    # TODO: Add assets for any other files that are in the zip file?
+    # If there are assets, does this mean it should be a catalog and not
+    # a collection???
 
     return collection_from_zip(
         pl.Path(z.key).stem, "zip archive", extensions, items, bboxes
@@ -69,9 +70,10 @@ def main(project: str, bucket: str, key: str, sess: fiona.session.AWSSession):
     if z.stac_type == "collection":
         return process_collection(project, z, sess)
 
-    if z.contains_rasters:
-        return process_zipped_raster(project, z, sess)
-
     if z.contains_shapefiles:
-        logging.warning("YEP")
-        return process_zipped_shapefile(project, z, sess)
+        shapefile_name = z.shapefiles[0]
+        return process_zipped_shapefile(project, z, shapefile_name, sess)
+
+    if z.contains_rasters:
+        raster_name = z.rasters[0]
+        return process_zipped_raster(project, z, raster_name, sess)
