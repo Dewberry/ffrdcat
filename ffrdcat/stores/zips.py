@@ -2,13 +2,14 @@ import fiona
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import pathlib as pl
+import json
 from pystac import Item
 from shapely.geometry import mapping
 
 from common.s3_utils import vsi_path
-from common.geo_utils import simplified_footprint, bbox_to_4326, footprint_from_bbox
+from common.geo_utils import bbox_to_4326, footprint_from_bbox
 
-from stores.vectors import get_vector_meta, STAC_VECTOR_EXTENSIONS
+from stores.vectors import get_vector_meta, simplified_footprint, STAC_VECTOR_EXTENSIONS
 from stores.rasters import get_raster_meta, STAC_RASTER_EXTENSIONS
 
 
@@ -57,13 +58,13 @@ class S3Zip:
 
     @property
     def contains_shapefiles(self):
-        if len(self.shapefiles) > 1:
+        if len(self.shapefiles) >= 1:
             return True
         return False
 
     @property
     def contains_rasters(self):
-        if len(self.rasters) > 1:
+        if len(self.rasters) >= 1:
             return True
         return False
 
@@ -92,14 +93,15 @@ class S3Zip:
         return [f for f in self.contents if f[:-4] == filename[:-4]]
 
     def __repr__(self):
-        return (
-            f"S3ZIP ("
-            f"\n    bucket:      {self.bucket}"
-            f"\n    key:         {self.key}"
-            f"\n    shapefiles:  {len(self.shapefiles)}"
-            f"\n    rasters:     {len(self.rasters)}"
-            # f"\n    ras_model_count={len(self.not_implemented)},"
-            f"\n)"
+        return json.dumps(
+            {
+                "S3ZIP": {
+                    "bucket": self.bucket,
+                    "key": self.key,
+                    "shapefiles": len(self.shapefiles),
+                    "rasters": len(self.rasters),
+                }
+            }
         )
 
 

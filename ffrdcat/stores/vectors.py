@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+import geopandas as gpd
+from shapely.geometry import mapping
 import fiona
 
 
@@ -45,3 +47,17 @@ def vector_item_properties(
         "data_type": data_type,
         "fields": fields,
     }
+
+
+def simplified_footprint(path: str):
+    """
+    path should be formatted: (TODO) - add examples
+    TODO: Add error handling, crs handling, and generally review and improve
+    """
+    gdf = gpd.read_file(path)
+    gdf["dissolver"] = 1
+    gdf = gdf.dissolve(by="dissolver")
+    gdf = gdf.to_crs("epsg:4326")
+    gdf.geometry = gdf.geometry.simplify(0.001)
+    mapped_geometry = gdf["geometry"].apply(mapping)
+    return mapped_geometry.iloc[0]

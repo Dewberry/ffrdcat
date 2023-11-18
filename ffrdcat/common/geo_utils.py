@@ -28,17 +28,3 @@ def footprint_from_bbox(bbox: tuple, projection: str):
             [bbox_4326[2], bbox_4326[1]],
         ]
     )
-
-
-def simplified_footprint(path: str):
-    """
-    path should be formatted: (TODO) - add examples
-    TODO: Add error handling, crs handling, and generally review and improve
-    """
-    gdf = gpd.read_file(path)
-    gdf["dissolver"] = 1
-    gdf = gdf.dissolve(by="dissolver")
-    gdf = gdf.to_crs("epsg:4326")
-    gdf.geometry = gdf.geometry.simplify(1)
-    mapped_geometry = gdf["geometry"].apply(mapping)
-    return mapped_geometry.iloc[0]
