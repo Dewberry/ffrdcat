@@ -3,11 +3,13 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import pathlib as pl
 from pystac import Item
+from shapely.geometry import mapping
 
 from common.s3_utils import vsi_path
-from common.geo_utils import simplified_footprint, bbox_to_4326
+from common.geo_utils import simplified_footprint, bbox_to_4326,footprint_from_bbox
 
 from stores.vectors import get_vector_meta, STAC_VECTOR_EXTENSIONS
+from stores.rasters import get_raster_meta, STAC_RASTER_EXTENSIONS
 
 
 def read_zip(bucket: str, key: str, session: fiona.session.AWSSession):
@@ -127,8 +129,8 @@ class ZippedVector(S3Zip):
         return bbox_to_4326(self.meta_data.bbox, self.projection)
 
     @property
-    def propertes(self):
-        return self.meta_data.properties
+    def fields(self):
+        return self.meta_data.fields
 
     @property
     def geom_type(self):
@@ -146,6 +148,55 @@ class ZippedVector(S3Zip):
             href=href,
             id=item_id,
             geometry=self.footprint,
+            bbox=self.bbox_4326,
+            datetime=dtm,
+            stac_extensions=stac_extensions,
+            properties=properties,
+        )
+
+
+class ZippedRaster():
+    def __init__(
+        self, bucket: str, key: str, file_name: str
+    ):
+        self.bucket=bucket
+        self.key=key
+        self.file_name = file_name
+        self.vsi_path = vsi_path(self.bucket, self.key, self.file_name)
+        self.meta_data = get_raster_meta(self.vsi_path)
+
+    @property
+    def bbox(self):
+        return self.meta_data.bbox
+
+    @property
+    def projection(self):
+        return self.meta_data.projection
+
+    @property
+    def footprint(self):
+        return footprint_from_bbox(self.meta_data.bbox,  self.projection)
+
+    @property
+    def bbox_4326(self):
+        return bbox_to_4326(self.meta_data.bbox, self.projection)
+
+    @property
+    def resoultion(self):
+        return self.meta_data.resoultion
+
+    def to_stac_item(
+        self,
+        item_id: str,
+        dtm: str,
+        properties: list,
+        stac_extensions: list = STAC_RASTER_EXTENSIONS,
+        href: str = None,
+    ):
+        return Item(
+            href=href,
+            id=item_id,
+            geometry=mapping(self.footprint),
             bbox=self.bbox_4326,
             datetime=dtm,
             stac_extensions=stac_extensions,
