@@ -19,8 +19,8 @@ STAC_VECTOR_EXTENSIONS = [
 ]
 
 
-def get_vector_meta(filename: str) -> VectorMeta:
-    with fiona.open(filename) as src:
+def get_vector_meta(filename: str, layer: str = None) -> VectorMeta:
+    with fiona.open(filename, layer=layer) as src:
         return VectorMeta(
             bbox=src.bounds,
             projection=src.crs_wkt,
@@ -49,15 +49,15 @@ def vector_item_properties(
     }
 
 
-def simplified_footprint(path: str):
+def simplified_footprint(path: str, layer: str = None):
     """
     path should be formatted: (TODO) - add examples
     TODO: Add error handling, crs handling, and generally review and improve
     """
-    gdf = gpd.read_file(path)
+    gdf = gpd.read_file(path, layer=layer)
     gdf["dissolver"] = 1
     gdf = gdf.dissolve(by="dissolver")
     gdf = gdf.to_crs("epsg:4326")
-    gdf.geometry = gdf.geometry.simplify(0.001)
+    gdf.geometry = gdf.geometry.simplify(0.0001)
     mapped_geometry = gdf["geometry"].apply(mapping)
     return mapped_geometry.iloc[0]

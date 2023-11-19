@@ -30,6 +30,16 @@ def read_zip(bucket: str, key: str, session: fiona.session.AWSSession):
     return contents
 
 
+def read_zipped_gdb(bucket: str, key: str, session: fiona.session.AWSSession):
+    try:
+        zfile = vsi_path(bucket, key)
+        with fiona.Env(session=session):
+            contents = fiona.listlayers(zfile)
+    except:
+        raise KeyError(f"Cannot read or list contents of {zfile}")
+    return contents
+
+
 class S3Zip:
     def __init__(self, bucket: str, key: str, session: fiona.session.AWSSession):
         self.bucket = bucket
@@ -165,6 +175,41 @@ class ZippedVector(S3Zip):
         )
 
 
+class ZippedFGDB:
+    def __init__(self, bucket: str, key: str, session: fiona.session.AWSSession):
+        self.bucket = bucket
+        self.key = key
+        self.vsi_path = vsi_path(self.bucket, self.key)
+        self._contents = read_zipped_gdb(bucket, key, session)
+
+    @property
+    def contents(self):
+        return self._contents
+
+    def layer_to_stac_item(self, item_id, dtm, layer: str, properties: dict):
+        meta_data = get_vector_meta(self.vsi_path, layer=layer)
+        return Item(
+            href=layer,
+            id=item_id,
+            geometry=simplified_footprint(self.vsi_path, layer=layer),
+            bbox=bbox_to_4326(meta_data.bbox, meta_data.projection),
+            datetime=dtm,
+            stac_extensions=STAC_VECTOR_EXTENSIONS,
+            properties=properties,
+        )
+    # def __repr__(self):
+    #     return json.dumps(
+    #         {
+    #             "S3ZIP": {
+    #                 "bucket": self.bucket,
+    #                 "key": self.key,
+    #                 "shapefiles": len(self.shapefiles),
+    #                 "rasters": len(self.rasters),
+    #             }
+    #         }
+    #     )
+
+
 class ZippedRaster:
     def __init__(self, bucket: str, key: str, file_name: str):
         self.bucket = bucket
@@ -212,7 +257,9 @@ class ZippedRaster:
         )
 
 
-def add_shapefile_assets_to_item(zv: ZippedVector, shapefile_name:str, item: Item) -> Item:
+def add_shapefile_assets_to_item(
+    zv: ZippedVector, shapefile_name: str, item: Item
+) -> Item:
     for part in zv.shapefile_parts(shapefile_name):
         item.add_asset(
             key=pl.Path(part).suffix.replace(".", ""),
