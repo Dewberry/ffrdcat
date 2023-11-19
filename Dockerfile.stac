@@ -1,0 +1,20 @@
+FROM osgeo/gdal:ubuntu-small-3.5.1 as prod
+
+RUN apt-get update && \
+    apt-get install -y python3-pip && \
+    pip3 install rasterio --no-binary rasterio && \
+    pip3 install pystac[validation]
+
+WORKDIR /plugin
+
+# install plugin packages
+COPY ffrdcat/plugins/zip_reader/requirements.txt .
+RUN pip3 install -r requirements.txt
+
+# copy source code as needed
+COPY ffrdcat/common/. common/.
+COPY ffrdcat/stores stores/.
+
+# copy main scripts
+COPY ffrdcat/process_zip.py .
+COPY ffrdcat/plugins/zip_reader/main.py .

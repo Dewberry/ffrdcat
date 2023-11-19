@@ -1,0 +1,17 @@
+version: '3.9'
+
+services:
+  ffrdcat:
+    container_name: ffrdcat
+    build:
+      context: .
+      dockerfile: Dockerfile.stac
+    env_file:
+      - ./.env
+    volumes:
+      - ./top-level:/plugin/top-level
+    # entrypoint: sleep 1d
+    entrypoint: ["python", "-m", "main", "{\"project\": \"trinity\", \"bucket\": \"ffrd-trinity\", \"key\":\"from-USACE/Subbasin265.zip\",\"collection_id\": \"top-level\"}"]
+    # entrypoint: ["python", "-m", "main", "{\"project\": \"trinity\", \"bucket\": \"ffrd-trinity\", \"key\":\"from-USACE/Trinity2021LandCover.zip\",\"collection_id\": \"top-level\"}"]
+    # entrypoint: ["python", "-m", "main", "{\"project\": \"trinity\", \"bucket\": \"ffrd-trinity\", \"key\":\"from-USACE/ModelingUnitLayers_v1.zip\",\"collection_id\": \"top-level\"}"]
+    # entrypoint: ["python", "-m", "main", "{\"project\": \"trinity\", \"bucket\": \"ffrd-trinity\", \"key\":\"from-USACE/FEMA_FFRD_Initiative_TrinityRecBasin.gdb.zip\",\"collection_id\": \"top-level\"}"]
