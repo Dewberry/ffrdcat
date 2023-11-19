@@ -149,7 +149,7 @@ dmypy.json
 # pytype static type analyzer
 .pytype/
 
-# Cython debug symbols
+# Cython info symbols
 cython_debug/
 
 # PyCharm
@@ -165,3 +165,4 @@ stac-tiffs-dev/
 settings.json
 dev.py
 kanawha*
+trinity*
