@@ -5,7 +5,7 @@ import pathlib as pl
 import json
 from pystac import Item, Asset
 from shapely.geometry import mapping
-
+import logging    
 from common.s3_utils import vsi_path
 from common.geo_utils import bbox_to_4326, footprint_from_bbox
 
@@ -122,7 +122,11 @@ class ZippedVector(S3Zip):
         super().__init__(bucket, key, session)
         self.file_name = file_name
         self.vsi_path = vsi_path(self.bucket, self.key, self.file_name)
-        self.meta_data = get_vector_meta(self.vsi_path)
+        with fiona.Env(session=session):
+            try:
+                self.meta_data = get_vector_meta(self.vsi_path)
+            except Exception as e:
+                logging.error(f"unable to read data from file {self.file_name}:{e}")
 
     @property
     def bbox(self):
@@ -174,6 +178,17 @@ class ZippedVector(S3Zip):
             properties=properties,
         )
 
+    def __repr__(self):
+        return json.dumps(
+            {
+                "ZippedVector": {
+                    "bucket": self.bucket,
+                    "key": self.key,
+                    "vector": self.file_name,
+                }
+            }
+        )
+
 
 class ZippedFGDB:
     def __init__(self, bucket: str, key: str, session: fiona.session.AWSSession):
@@ -197,17 +212,17 @@ class ZippedFGDB:
             stac_extensions=STAC_VECTOR_EXTENSIONS,
             properties=properties,
         )
-    # def __repr__(self):
-    #     return json.dumps(
-    #         {
-    #             "S3ZIP": {
-    #                 "bucket": self.bucket,
-    #                 "key": self.key,
-    #                 "shapefiles": len(self.shapefiles),
-    #                 "rasters": len(self.rasters),
-    #             }
-    #         }
-    #     )
+
+    def __repr__(self):
+        return json.dumps(
+            {
+                "ZippedFGDB": {
+                    "bucket": self.bucket,
+                    "key": self.key,
+                    "layers": len(self._contents),
+                }
+            }
+        )
 
 
 class ZippedRaster:
@@ -254,6 +269,17 @@ class ZippedRaster:
             datetime=dtm,
             stac_extensions=stac_extensions,
             properties=properties,
+        )
+
+    def __repr__(self):
+        return json.dumps(
+            {
+                "ZippedRaster": {
+                    "bucket": self.bucket,
+                    "key": self.key,
+                    "raster": self.file_name,
+                }
+            }
         )
 
 
