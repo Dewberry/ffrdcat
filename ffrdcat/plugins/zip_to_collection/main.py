@@ -1,5 +1,5 @@
 import sys
-from process_zip import main, plugin_params
+from ffrdcat.zip_to_collection import main, plugin_params
 from papipyplug import parse_input, print_results, plugin_logger
 
 
