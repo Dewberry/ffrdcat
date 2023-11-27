@@ -8,10 +8,22 @@ services:
       dockerfile: Dockerfile.stac
     env_file:
       - ./.env
-    volumes:
-      - ./top-level:/plugin/top-level
+    # volumes:
+    #   - ./top-level:/plugin/top-level
     # entrypoint: sleep 1d
-    entrypoint: ["python", "-m", "main", "{\"project\": \"trinity\", \"bucket\": \"ffrd-trinity\", \"key\":\"from-USACE/Subbasin265.zip\",\"collection_id\": \"top-level\"}"]
-    # entrypoint: ["python", "-m", "main", "{\"project\": \"trinity\", \"bucket\": \"ffrd-trinity\", \"key\":\"from-USACE/Trinity2021LandCover.zip\",\"collection_id\": \"top-level\"}"]
-    # entrypoint: ["python", "-m", "main", "{\"project\": \"trinity\", \"bucket\": \"ffrd-trinity\", \"key\":\"from-USACE/ModelingUnitLayers_v1.zip\",\"collection_id\": \"top-level\"}"]
+
+    # Single Shapefile
+    # entrypoint: ["python", "-m", "main", "{\"project\": \"trinity\", \"bucket\": \"ffrd-trinity\", \"key\":\"from-USACE/Subbasin265.zip\",\"collection_title\": \"Subbasin265.zip\"}"]
+    # entrypoint: ["python", "-m", "main", "{\"project\": \"trinity\", \"bucket\": \"ffrd-trinity\", \"key\":\"from-USACE/TrinityKeyStreams.zip\",\"collection_title\": \"TrinityKeyStreams.zip\"}"]
+
+    # Single Tiff
+    # entrypoint: ["python", "-m", "main", "{\"project\": \"trinity\", \"bucket\": \"ffrd-trinity\", \"key\":\"from-USACE/Trinity2021LandCover.zip\",\"collection_title\": \"Trinity2021LandCover.zip\"}"]
+    
+    # Collections
+    # entrypoint: ["python", "-m", "main", "{\"project\": \"trinity\", \"bucket\": \"ffrd-trinity\", \"key\":\"from-USACE/DataPrep.zip\",\"collection_title\": \"DataPrep.zip\"}"]
+    # entrypoint: ["python", "-m", "main", "{\"project\": \"trinity\", \"bucket\": \"ffrd-trinity\", \"key\":\"from-USACE/Wallisville_HEC-RAS.zip\",\"collection_title\": \"Wallisville_HEC-RAS.zip\"}"]
+    # entrypoint: ["python", "-m", "main", "{\"project\": \"trinity\", \"bucket\": \"ffrd-trinity\", \"key\":\"from-USACE/StructureDensity_CombinedPolygon.zip\",\"collection_title\": \"StructureDensity_CombinedPolygon.zip\"}"]
+    
+
+    # GDB Collections
     # entrypoint: ["python", "-m", "main", "{\"project\": \"trinity\", \"bucket\": \"ffrd-trinity\", \"key\":\"from-USACE/FEMA_FFRD_Initiative_TrinityRecBasin.gdb.zip\",\"collection_id\": \"top-level\"}"]

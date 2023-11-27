@@ -1,4 +1,4 @@
-FROM osgeo/gdal:ubuntu-small-3.5.1 as prod
+FROM ghcr.io/osgeo/gdal:ubuntu-small-3.8.0 as prod
 
 RUN apt-get update && \
     apt-get install -y python3-pip && \
@@ -8,13 +8,12 @@ RUN apt-get update && \
 WORKDIR /plugin
 
 # install plugin packages
-COPY ffrdcat/plugins/zip_reader/requirements.txt .
+COPY ffrdcat/plugins/zip_to_collection/requirements.txt .
 RUN pip3 install -r requirements.txt
 
 # copy source code as needed
-COPY ffrdcat/common/. common/.
 COPY ffrdcat/stores stores/.
 
 # copy main scripts
-COPY ffrdcat/process_zip.py .
-COPY ffrdcat/plugins/zip_reader/main.py .
+COPY ffrdcat/zip_to_collection.py .
+COPY ffrdcat/plugins/zip_to_collection/main.py .
